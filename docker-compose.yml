@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # Development service
+  app-dev:
+    build:
+      context: ./my-app
+      target: builder
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./my-app:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    command: npm start
+
+  # Production service
+  app-prod:
+    build:
+      context: ./my-app
+      target: production
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  # Test service
+  app-test:
+    build:
+      context: ./my-app
+      target: test
+    volumes:
+      - ./my-app:/app
+      - /app/node_modules
+    command: npm run test -- --coverage --ci --watchAll=false

@@ -40,9 +40,68 @@ jobs:
           name: production-files
           path: ./my-app/build
 
+  docker:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (test stage)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./my-app
+          target: test
+          push: false
+          tags: my-react-app:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Docker image (production stage)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./my-app
+          target: production
+          push: false
+          tags: my-react-app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          # Start the container in detached mode
+          docker run -d -p 8080:80 --name test-container my-react-app:latest
+          
+          # Wait for the container to be ready
+          sleep 5
+          
+          # Test if the application is accessible
+          curl -f http://localhost:8080 || exit 1
+          
+          # Check if it serves the React app
+          curl -s http://localhost:8080 | grep -q "React App" || exit 1
+          
+          # Clean up
+          docker stop test-container
+          docker rm test-container
+
+      - name: Save Docker image as artifact
+        run: |
+          docker save my-react-app:latest | gzip > my-react-app.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: my-react-app.tar.gz
+
   deploy:
     name: Deploy
-    needs: build
+    needs: [build, docker]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
