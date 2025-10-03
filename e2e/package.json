@@ -1,0 +1,15 @@
+{
+  "name": "react-app-e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for React app",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "report": "playwright show-report",
+    "install-browsers": "playwright install"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

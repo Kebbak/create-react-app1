@@ -9,8 +9,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (needed for building)
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -36,17 +36,17 @@ COPY . .
 # Run tests
 RUN npm run test -- --coverage --ci --watchAll=false
 
-# Stage 3: Production stage
-FROM nginx:alpine AS production
+# # Stage 3: Production stage
+# FROM nginx:alpine AS production
 
-# Copy built assets from builder stage
-COPY --from=builder /app/build /usr/share/nginx/html
+# # Copy built assets from builder stage
+# COPY --from=builder /app/build /usr/share/nginx/html
 
-# Copy custom nginx configuration (optional)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# # Copy custom nginx configuration (optional)
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
-EXPOSE 80
+# # Expose port 80
+# EXPOSE 80
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# # Start nginx
+# CMD ["nginx", "-g", "daemon off;"]

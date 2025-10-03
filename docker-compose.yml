@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # Development service
   app-dev:
     build:
       context: ./my-app
@@ -9,27 +8,34 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./my-app:/app
-      - /app/node_modules
+      - ./my-app/src:/app/src
+      - ./my-app/public:/app/public
     environment:
       - CHOKIDAR_USEPOLLING=true
     command: npm start
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Production service
-  app-prod:
-    build:
-      context: ./my-app
-      target: production
-    ports:
-      - "8080:80"
-    restart: unless-stopped
-
-  # Test service
   app-test:
     build:
       context: ./my-app
       target: test
-    volumes:
-      - ./my-app:/app
-      - /app/node_modules
     command: npm run test -- --coverage --ci --watchAll=false
+
+  app-e2e:
+    build:
+      context: .
+      dockerfile: e2e/Dockerfile
+    depends_on:
+      app-dev:
+        condition: service_healthy
+    volumes:
+      - ./e2e/test-results:/app/test-results
+      - ./e2e/playwright-report:/app/playwright-report
+    environment:
+      - CI=true
+    command: npm test
+    network_mode: "service:app-dev"
