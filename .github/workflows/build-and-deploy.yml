@@ -1,168 +1,168 @@
-name: Build & deploy
+# name: Build & deploy
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
 
-jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     name: Build
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18.x
+#       - name: Install Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 18.x
 
-      - name: Install NPM packages
-        run: npm i
-        working-directory: ./my-app
+#       - name: Install NPM packages
+#         run: npm i
+#         working-directory: ./my-app
 
-      - name: Build project
-        run: npm run build
-        working-directory: ./my-app
+#       - name: Build project
+#         run: npm run build
+#         working-directory: ./my-app
 
-      - name: Run tests
-        run: npm run test -- --coverage --ci --watchAll=false
-        working-directory: ./my-app
+#       - name: Run tests
+#         run: npm run test -- --coverage --ci --watchAll=false
+#         working-directory: ./my-app
 
-      - name: Upload production-ready build files
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-files
-          path: ./my-app/build
+#       - name: Upload production-ready build files
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: production-files
+#           path: ./my-app/build
 
-  docker:
-    name: Docker Build & Test
-    runs-on: ubuntu-latest
+#   docker:
+#     name: Docker Build & Test
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
-        if: github.ref == 'refs/heads/main'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+#       - name: Log in to GitHub Container Registry
+#         if: github.ref == 'refs/heads/main'
+#         uses: docker/login-action@v3
+#         with:
+#           registry: ghcr.io
+#           username: ${{ github.actor }}
+#           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image (test stage)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./my-app
-          target: test
-          push: false
-          tags: my-react-app:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+#       - name: Build Docker image (test stage)
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: ./my-app
+#           target: test
+#           push: false
+#           tags: my-react-app:test
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
 
-      - name: Build Docker image (production stage)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./my-app
-          target: production
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            my-react-app:latest
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+#       - name: Build Docker image (production stage)
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: ./my-app
+#           target: production
+#           push: ${{ github.ref == 'refs/heads/main' }}
+#           tags: |
+#             my-react-app:latest
+#             ghcr.io/${{ github.repository }}:latest
+#             ghcr.io/${{ github.repository }}:${{ github.sha }}
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
 
-      - name: Test Docker image
-        run: |
-          # Start the container in detached mode
-          docker run -d -p 8080:80 --name test-container my-react-app:latest
+#       - name: Test Docker image
+#         run: |
+#           # Start the container in detached mode
+#           docker run -d -p 8080:80 --name test-container my-react-app:latest
           
-          # Wait for the container to be ready
-          sleep 5
+#           # Wait for the container to be ready
+#           sleep 5
           
-          # Test if the application is accessible
-          curl -f http://localhost:8080 || exit 1
+#           # Test if the application is accessible
+#           curl -f http://localhost:8080 || exit 1
           
-          # Check if it serves the React app
-          curl -s http://localhost:8080 | grep -q "React App" || exit 1
+#           # Check if it serves the React app
+#           curl -s http://localhost:8080 | grep -q "React App" || exit 1
           
-          # Clean up
-          docker stop test-container
-          docker rm test-container
+#           # Clean up
+#           docker stop test-container
+#           docker rm test-container
 
-      - name: Save Docker image as artifact
-        run: |
-          docker save my-react-app:latest | gzip > my-react-app.tar.gz
+#       - name: Save Docker image as artifact
+#         run: |
+#           docker save my-react-app:latest | gzip > my-react-app.tar.gz
 
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: my-react-app.tar.gz
+#       - name: Upload Docker image artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: docker-image
+#           path: my-react-app.tar.gz
 
-  deploy-static:
-    name: Deploy Static Files (GitHub Pages)
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+#   deploy-static:
+#     name: Deploy Static Files (GitHub Pages)
+#     needs: build
+#     runs-on: ubuntu-latest
+#     if: github.ref == 'refs/heads/main'
 
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: production-files
-          path: ./build
+#     steps:
+#       - name: Download artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: production-files
+#           path: ./build
 
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+#       - name: Deploy to gh-pages
+#         uses: peaceiris/actions-gh-pages@v4
+#         with:
+#           github_token: ${{ secrets.GITHUB_TOKEN }}
+#           publish_dir: ./build
 
-  deploy-docker:
-    name: Deploy Docker Image
-    needs: docker
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+#   deploy-docker:
+#     name: Deploy Docker Image
+#     needs: docker
+#     runs-on: ubuntu-latest
+#     if: github.ref == 'refs/heads/main'
     
-    steps:
-      - name: Docker image deployed to GitHub Container Registry
-        run: |
-          echo "✅ Docker image has been pushed to:"
-          echo "📦 ghcr.io/${{ github.repository }}:latest"
-          echo "📦 ghcr.io/${{ github.repository }}:${{ github.sha }}"
-          echo ""
-          echo "🚀 To deploy to production, you can:"
-          echo "1. Pull the image: docker pull ghcr.io/${{ github.repository }}:latest"
-          echo "2. Run the container: docker run -p 80:80 ghcr.io/${{ github.repository }}:latest"
-          echo ""
-          echo "💡 Integration examples for cloud platforms:"
-          echo "- AWS ECS: Use this image in your task definition"
-          echo "- Google Cloud Run: gcloud run deploy --image ghcr.io/${{ github.repository }}:latest"
-          echo "- Azure Container Instances: az container create --image ghcr.io/${{ github.repository }}:latest"
+#     steps:
+#       - name: Docker image deployed to GitHub Container Registry
+#         run: |
+#           echo "✅ Docker image has been pushed to:"
+#           echo "📦 ghcr.io/${{ github.repository }}:latest"
+#           echo "📦 ghcr.io/${{ github.repository }}:${{ github.sha }}"
+#           echo ""
+#           echo "🚀 To deploy to production, you can:"
+#           echo "1. Pull the image: docker pull ghcr.io/${{ github.repository }}:latest"
+#           echo "2. Run the container: docker run -p 80:80 ghcr.io/${{ github.repository }}:latest"
+#           echo ""
+#           echo "💡 Integration examples for cloud platforms:"
+#           echo "- AWS ECS: Use this image in your task definition"
+#           echo "- Google Cloud Run: gcloud run deploy --image ghcr.io/${{ github.repository }}:latest"
+#           echo "- Azure Container Instances: az container create --image ghcr.io/${{ github.repository }}:latest"
 
-      # Example: Deploy to Google Cloud Run (uncomment and configure)
-      # - name: Deploy to Google Cloud Run
-      #   uses: google-github-actions/deploy-cloudrun@v2
-      #   with:
-      #     service: my-react-app
-      #     image: ghcr.io/${{ github.repository }}:latest
-      #     region: us-central1
+#       # Example: Deploy to Google Cloud Run (uncomment and configure)
+#       # - name: Deploy to Google Cloud Run
+#       #   uses: google-github-actions/deploy-cloudrun@v2
+#       #   with:
+#       #     service: my-react-app
+#       #     image: ghcr.io/${{ github.repository }}:latest
+#       #     region: us-central1
 
-      # Example: Deploy to AWS ECS (uncomment and configure)
-      # - name: Deploy to AWS ECS
-      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      #   with:
-      #     task-definition: task-definition.json
-      #     service: my-react-app-service
-      #     cluster: my-react-app-cluster
+#       # Example: Deploy to AWS ECS (uncomment and configure)
+#       # - name: Deploy to AWS ECS
+#       #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#       #   with:
+#       #     task-definition: task-definition.json
+#       #     service: my-react-app-service
+#       #     cluster: my-react-app-cluster
